@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # 1. Database: PostgreSQL
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: collaborative_db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. Backend: NestJS
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: collaborative_be
+    ports:
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
+    env_file:
+      - .env
+    depends_on:
+      - postgres-db
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # 3. Frontend: Next.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: collaborative_fe
+    ports:
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+
+volumes:
+  postgres_data:
